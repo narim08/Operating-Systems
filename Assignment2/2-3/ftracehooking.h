@@ -4,11 +4,22 @@
 #include <linux/module.h>
 #include <linux/syscalls.h>
 #include <linux/kallsyms.h>
+#include <linux/types.h>
+#include <linux/limits.h>
 
-extern void **syscall_table;
-extern pid_t traced_pid;
 
-void make_rw(void *addr);
-void make_ro(void *addr);
+struct ftrace_data {
+    int open_count;                
+    int close_count;               
+    int read_count;                 
+    int write_count;               
+    int lseek_count;                
+    size_t total_read_bytes;       
+    size_t total_write_bytes;     
+    char last_file_name[NAME_MAX];  
+};
+extern struct ftrace_data ftrace_info;
+extern pid_t target_pid;
 
-#endif
+#endif 
+
