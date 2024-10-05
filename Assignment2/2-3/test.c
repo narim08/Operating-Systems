@@ -10,8 +10,13 @@ int main()
 {
 	syscall(336, getpid());
 	int fd = 0;
-	char buf[50];
-	fd = open("abc.text", O_RDWR);
+	char buf[50] = {0};
+	fd = open("abc.txt", O_RDWR);
+	if (fd == -1) {
+		perror("Error opening file");
+		exit(EXIT_FAILURE);
+	}
+	
 	for (int i=1; i<=4; i++) 
 	{
 		read(fd, buf, 5);
@@ -22,6 +27,8 @@ int main()
 	lseek(fd, 0, SEEK_END);
 	write(fd, "HELLO", 6);
 	close(fd);
+	
+	syscall(336, 0);
 	
 	return 0;
 }
