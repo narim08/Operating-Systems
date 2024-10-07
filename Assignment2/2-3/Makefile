@@ -1,5 +1,5 @@
-obj-m += iotracehooking.o
 obj-m += ftracehooking.o
+obj-m += iotracehooking.o
 
 PWD = $(CURDIR)
 

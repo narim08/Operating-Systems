@@ -16,7 +16,9 @@ void **syscall_table;
 void *real_os_ftrace; // Pointer to store the address of the existing os_ftrace system.
 
 pid_t target_pid = -1;
+
 extern void printInfo(void);
+extern void setPid(pid_t pid);
 
 
 static asmlinkage int my_ftrace(const struct pt_regs *regs) {
@@ -25,9 +27,10 @@ static asmlinkage int my_ftrace(const struct pt_regs *regs) {
     if (pid > 0) {
         printk(KERN_INFO "OS Assignment 2 ftrace [%d] Start\n", pid);
         target_pid = pid;
+        setPid(target_pid);
     } else if (pid == 0) {
     	printInfo();
-    	printk(KERN_INFO "OS Assignment 2 ftrace [%d] End\n", pid);
+    	printk(KERN_INFO "OS Assignment 2 ftrace [%d] End\n", target_pid);
     }
 
     // return sys_os_ftrace
