@@ -17,18 +17,19 @@ void *real_os_ftrace; // Pointer to store the address of the existing os_ftrace 
 
 pid_t target_pid = -1;
 
+// iotracehooking.c -> ftracehooking.c
 extern void printInfo(void);
 extern void setPid(pid_t pid);
 
-
+/* os_ftrace -> my_ftrace system call hijack */
 static asmlinkage int my_ftrace(const struct pt_regs *regs) {
     pid_t pid = (pid_t)regs->di;  // first argument
 
-    if (pid > 0) {
+    if (pid > 0) { // trace start
         printk(KERN_INFO "OS Assignment 2 ftrace [%d] Start\n", pid);
         target_pid = pid;
-        setPid(target_pid);
-    } else if (pid == 0) {
+        setPid(target_pid); // send target_pid to iotracehooking.c
+    } else if (pid == 0) { // trace end
     	printInfo();
     	printk(KERN_INFO "OS Assignment 2 ftrace [%d] End\n", target_pid);
     }
