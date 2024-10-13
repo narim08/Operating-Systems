@@ -15,17 +15,16 @@ void **syscall_table;
 void *real_os_ftrace; // Pointer to store the address of the existing os_ftrace system.
 
 
-static char *get_task_state(struct task_struct *task) {
+/* Information on task status */
+static char *stateInfo(struct task_struct *task) {
     switch (task->state) {
         case TASK_RUNNING:
             return "Running or ready";
-        case TASK_INTERRUPTIBLE:
-            return "Wait";
         case TASK_UNINTERRUPTIBLE:
             return "Wait with ignoring all signals";
+        case TASK_INTERRUPTIBLE:
+            return "Wait";
         case __TASK_STOPPED:
-            return "Stopped";
-        case __TASK_TRACED:
             return "Stopped";
         case EXIT_ZOMBIE:
             return "Zombie process";
@@ -39,42 +38,39 @@ static char *get_task_state(struct task_struct *task) {
 
 /* os_ftrace -> process_tracer system call hijack */
 asmlinkage pid_t process_tracer(const struct pt_regs *regs) {
-    pid_t trace_task = (pid_t)regs->di;
+    pid_t trace_task = (pid_t)regs->di; //get pid
     struct task_struct *task;
     struct task_struct *parent_task;
-    struct list_head *list;
+    
+    struct list_head *list; //task linked list
     int sibling_count = 0;
     int child_count = 0;
 
-    task = pid_task(find_vpid(trace_task), PIDTYPE_PID);
-    if (!task) {
-        printk(KERN_ERR "Process with PID %d not found\n", trace_task);
+    task = pid_task(find_vpid(trace_task), PIDTYPE_PID); //Find task by pid
+    if (!task) { //can't find it
         return -1;
     }
 
-    // 1. Process name
-    printk(KERN_INFO "##### TASK INFORMATION of ''[%d] %s'' #####\n",trace_task, task->comm);
 
-    // 2. Current process state
-    printk(KERN_INFO "- task state : %s\n", get_task_state(task));
+    /* Information output from the process */
+    printk(KERN_INFO "##### TASK INFORMATION of ''[%d] %s'' #####\n",trace_task, task->comm); //(1) process name
 
-    // 3. Process group information
+    printk(KERN_INFO "- task state : %s\n", stateInfo(task)); //(2) current process state
+
     printk(KERN_INFO "- Process Group Leader : [%d] %s\n", 
-           task_pgrp_nr(task), task->group_leader->comm);
+           task_pgrp_nr(task), task->group_leader->comm); //(3) process group information
 
-    // 4. Number of context switches
     printk(KERN_INFO "- Number of context switches : %lu\n", 
-           task->nvcsw + task->nivcsw);
+           task->nvcsw + task->nivcsw); //(4) number of context switches
 
-    // 5. Number of times fork() was called
-    printk(KERN_INFO "- Number of calling fork() : %d\n", task->fork_count);
+    printk(KERN_INFO "- Number of calling fork() : %d\n", task->fork_count); //(5) Number of times fork() was called
 
-    // 6. Parent process information
+    //(6) parent process information
     parent_task = task->real_parent;
     printk(KERN_INFO "- it's parent process : [%d] %s\n", 
            parent_task->pid, parent_task->comm);
 
-    // 7. Sibling processes information
+    //(7) sibling processes information
     printk(KERN_INFO "- it's sibling process(es) :\n");
     list_for_each(list, &parent_task->children) {
         struct task_struct *sibling = list_entry(list, struct task_struct, sibling);
@@ -83,20 +79,32 @@ asmlinkage pid_t process_tracer(const struct pt_regs *regs) {
             sibling_count++;
         }
     }
-    printk(KERN_INFO "    > This process has %d sibling process(es)\n", sibling_count);
+    if (sibling_count == 0) {
+    	printk(KERN_INFO "    > It has no sibling.\n");
+    }
+    else {
+    	printk(KERN_INFO "    > This process has %d sibling process(es)\n", sibling_count);	
+    }
 
-    // 8. Child processes information
+    //(8) child processes information
     printk(KERN_INFO "- it's child process(es) :\n");
     list_for_each(list, &task->children) {
         struct task_struct *child = list_entry(list, struct task_struct, sibling);
         printk(KERN_INFO "    > [%d] %s\n", child->pid, child->comm);
         child_count++;
     }
-    printk(KERN_INFO "    > This process has %d child process(es)\n", child_count);
+    if (child_count == 0) {
+    	printk(KERN_INFO "    > It has no child.\n");
+    }
+    else {
+    	printk(KERN_INFO "    > This process has %d child process(es)\n", child_count);
+    }
     
+    
+    // end print
     printk(KERN_INFO "##### END OF INFORMATION #####\n");
 
-    return trace_task;
+    return trace_task; //Returns the entered pid
 }
 
 
