@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <queue>
 
 
 typedef struct prc{
@@ -129,80 +130,74 @@ void SJF() {
 
 
 void RR(int quantum) {
-    int slot = 0;
-    int completeProc = 0;
-    int queue[1000]; // Ready queue
-    int front = 0, rear = 0;
-    int currProc = -1;
-
-    // Initialize the queue with processes that have arrived by currTime
-    for (int i = 0; i < pn; i++) {
-        if (proc[i].arrivalTime <= currTime) {
-            queue[rear++] = i;
-            proc[i].start = 1; // Mark as started
-            if (proc[i].startTime < 0) {
-                proc[i].startTime = currTime;
-            }
-        }
-    }
-
+    int slot = 0; //slot of gantt chart
+    int completeProc = 0; //completed process
+    
+    //Sort by arrival order initially
+    qsort(proc, pn, sizeof(process), compareProc);
+    
+    std::queue<int> readyQueue;
+    int currProc = 0; // Index to track next process to be added to queue
+    
     while (completeProc < pn) {
-        if (front == rear) { // No process in the queue, CPU idle
+        // Check for newly arrived processes
+        while (currProc < pn && proc[currProc].arrivalTime <= currTime) {
+            if (!proc[currProc].complete) {
+                readyQueue.push(currProc);
+            }
+            currProc++;
+        }
+        
+        // If ready queue is empty but there are more processes to come
+        if (readyQueue.empty() && completeProc < pn) {
             sprintf(ganttChart[slot], "|x|");
             currTime += 1;
-            slot++;
+            slot += 1;
             totalIdleTime += 1;
-
-            // Check for newly arrived processes during idle time
-            for (int i = 0; i < pn; i++) {
-                if (!proc[i].start && proc[i].arrivalTime <= currTime) {
-                    queue[rear++] = i;
-                    proc[i].start = 1;
-                    if (proc[i].startTime < 0) {
-                        proc[i].startTime = currTime;
-                    }
-                }
-            }
             continue;
         }
-
-        // Fetch the current process from the front of the queue
-        currProc = queue[front++];
         
-        // Calculate execution time for the current process (either full quantum or remaining time)
-        int execTime = (proc[currProc].remainingTime < quantum) ? proc[currProc].remainingTime : quantum;
-        
-        // Execute the current process
-        for (int t = 0; t < execTime; t++) {
-            sprintf(ganttChart[slot++], "|P%d|", proc[currProc].pid);
-            currTime += 1;
-            proc[currProc].remainingTime -= 1;
+        // Process the front of ready queue
+        if (!readyQueue.empty()) {
+            int current = readyQueue.front();
+            readyQueue.pop();
             
-            // Check for any new arrivals during execution and add to the queue
-            for (int i = 0; i < pn; i++) {
-                if (!proc[i].start && proc[i].arrivalTime <= currTime) {
-                    queue[rear++] = i;
-                    proc[i].start = 1;
-                    if (proc[i].startTime < 0) {
-                        proc[i].startTime = currTime;
-                    }
-                }
+            // Mark start time if first execution
+            if (!proc[current].start) {
+                proc[current].startTime = currTime;
+                proc[current].start = 1;
             }
-        }
-
-        // If the process is complete
-        if (proc[currProc].remainingTime <= 0) {
-            proc[currProc].complete = 1;
-            proc[currProc].completionTime = currTime;
-            completeProc += 1;
-        } else {
-            // Process is not complete, so re-add it to the queue
-            queue[rear++] = currProc;
-        }
-
-        // Add context switch time if there are other processes in the queue
-        if (front != rear) {
-            currTime += 0.1;
+            
+            // Execute for quantum time or remaining time, whichever is smaller
+            int executeTime = std::min(quantum, (int)proc[current].remainingTime);
+            
+            // Execute process
+            for (int i = 0; i < executeTime; i++) {
+                sprintf(ganttChart[slot], "|P%d|", proc[current].pid);
+                currTime += 1;
+                proc[current].remainingTime -= 1;
+                slot += 1;
+            }
+            
+            // Check if process is complete
+            if (proc[current].remainingTime <= 0) {
+                proc[current].complete = 1;
+                proc[current].completionTime = currTime;
+                completeProc++;
+            }
+            else {
+                // Check for any new arrivals before re-adding to queue
+                while (currProc < pn && proc[currProc].arrivalTime <= currTime) {
+                    if (!proc[currProc].complete) {
+                        readyQueue.push(currProc);
+                    }
+                    currProc++;
+                }
+                // Re-add the current process to ready queue
+                readyQueue.push(current);
+            }
+            
+            currTime += 0.1; // Add context switch time
         }
     }
 }
@@ -335,3 +330,4 @@ int main(int argc, char*argv[]) {
 	
 	return 0;
 }
+
