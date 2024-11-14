@@ -25,6 +25,13 @@ int Optimal_Algo(int *referStr, int frame, int page) {
 		for (int j=0; j<frame; j++) {
 			if (currPage == frameArr[j]) {
 				pageExist = true;
+				/*
+				printf("Page hit   %d: ", currPage);
+            			for (int k = 0; k < frame; k++) {
+               			printf("%d ", frameArr[k]);
+            			}
+            			printf("\n");
+            			*/
 				break;
 			}
 		}
@@ -59,7 +66,12 @@ int Optimal_Algo(int *referStr, int frame, int page) {
 					}
 				}
 				frameArr[replacePage] = currPage;
-			}
+			}/*
+			printf("Page Fault %d: ", currPage);
+            		for (int k = 0; k < frame; k++) {
+               		printf("%d ", frameArr[k]);
+            		}
+            		printf("\n");*/
 		}	
 	}
 	return optimalFault;
@@ -87,6 +99,13 @@ int FIFO_Algo(int *referStr, int frame, int page) {
 		for (int j=0; j<frame; j++) {
 			if (currPage == frameArr[j]) {
 				pageExist = true;
+				/*
+				printf("Page hit   %d: ", currPage);
+            			for (int k = 0; k < frame; k++) {
+               			printf("%d ", frameArr[k]);
+            			}
+            			printf("\n");
+            			*/
 				break;
 			}
 		}
@@ -97,6 +116,12 @@ int FIFO_Algo(int *referStr, int frame, int page) {
 			// Circular Queue
 			frameArr[rear] = currPage;
 			rear = (rear+1) % frame;
+			/*
+			printf("Page Fault %d: ", currPage);
+            		for (int k = 0; k < frame; k++) {
+               		printf("%d ", frameArr[k]);
+            		}
+            		printf("\n");*/
 		}
 	}
 	return fifoFault;
@@ -144,12 +169,25 @@ int LRU_algo(int *referStr, int frame, int page) {
 				}
 				frameArr[top-1] = currPage;
 			}
+			/*
+			printf("Page Fault %d: ", currPage);
+            		for (int k = 0; k < frame; k++) {
+               		printf("%d ", frameArr[k]);
+            		}
+            		printf("\n");
+            		*/
 		}
 		else { // currPage hit
 			for (int j=hitPage; j<top-1; j++) {
 				frameArr[j] = frameArr[j+1];
 			}			
 			frameArr[top-1] = currPage;
+			/*
+			printf("Page hit   %d: ", currPage);
+            		for (int k = 0; k < frame; k++) {
+               		printf("%d ", frameArr[k]);
+            		}
+            		printf("\n");*/
 		}
 	}
 	return lruFault;
@@ -157,8 +195,80 @@ int LRU_algo(int *referStr, int frame, int page) {
 
 
 //Clock: Circular structure with a reference bit to determine which pages to replace, giving pages a "second chance" before replacing them.
+typedef struct {
+	int pageNum;
+	int useBit;
+} Frame;
 
-
+int Clock_algo(int *referStr, int frame, int page) {
+	int clockFault = 0;
+	int currPage = -1;
+	int hand = 0; //clock hand
+	int tail = 0; //frame end
+	
+	// ========= Initialize frame array ========= //
+	Frame frameArr[frame];
+	for (int i=0; i<frame; i++) {
+		frameArr[i].pageNum = -1;
+		frameArr[i].useBit = 0;
+	}
+	
+	// ============ Page replacement ============ //
+	for (int i=0; i<page; i++) {
+		currPage = referStr[i]; // current page number
+		bool pageExist = false;
+		
+		// Check page existence
+		for (int j=0; j<frame; j++) {
+			if (currPage == frameArr[j].pageNum) {
+				pageExist = true;
+				frameArr[j].useBit = 1;
+				/*
+				printf("Page hit   %d: ", currPage);
+            			for (int k = 0; k < frame; k++) {
+               			printf("%d ", frameArr[k].pageNum);
+            			}
+            			printf("\n");
+            			*/
+            			break;
+			}
+		}
+		
+		// Page fault
+		if (!pageExist) {
+			clockFault++;
+			
+			// empty frame
+			if (tail < frame) {
+				frameArr[tail].pageNum = currPage;
+				frameArr[tail].useBit = 1;
+				tail++;
+			}
+			else { // full frame
+				while(1) { // Find and replace pages with use bit of 0
+					if (frameArr[hand].useBit == 1) {
+						frameArr[hand].useBit = 0;
+						hand = (hand+1) % frame; //circular
+					}
+					else {
+						frameArr[hand].pageNum = currPage;
+						frameArr[hand].useBit = 1;
+						hand = (hand+1) % frame;
+						break;
+					}
+				}
+			}/*
+			printf("Page Fault %d: ", currPage);
+            		for (int k = 0; k < frame; k++) {
+               		printf("%d ", frameArr[k].pageNum);
+            		}
+            		printf("\n");*/
+		}
+		
+        }
+	return clockFault;
+}
+			
 
 int main(int argc, char*argv[]) {
 	int referStr[1000]; //reference string
@@ -185,26 +295,26 @@ int main(int argc, char*argv[]) {
 	int optimalFault = Optimal_Algo(referStr, frame, page);
 	int fifoFault = FIFO_Algo(referStr, frame, page);
 	int lruFault = LRU_algo(referStr, frame, page);
-	//int clockFault = Clock_algo(referStr, frame, page);
+	int clockFault = Clock_algo(referStr, frame, page);
 	
 	
 	// =============== Print result =============== //
 	printf("Optimal Algorithm:\n");
 	printf("Number of Page Faults: %d\n", optimalFault);
-	printf("Page Fault Rate: %.2f%%\n", ((float)optimalFault/page)*100);
+	printf("Page Fault Rate: %.2f%%\n\n", ((float)optimalFault/page)*100);
 	
 	printf("FIFO Algorithm:\n");
 	printf("Number of Page Faults: %d\n", fifoFault);
-	printf("Page Fault Rate: %.2f%%\n", ((float)fifoFault/page)*100);
+	printf("Page Fault Rate: %.2f%%\n\n", ((float)fifoFault/page)*100);
 	
 	printf("LRU Algorithm:\n");
 	printf("Number of Page Faults: %d\n", lruFault);
-	printf("Page Fault Rate: %.2f%%\n", ((float)lruFault/page)*100);
-	/*
+	printf("Page Fault Rate: %.2f%%\n\n", ((float)lruFault/page)*100);
+	
 	printf("Clock Algorithm:\n");
 	printf("Number of Page Faults: %d\n", clockFault);
-	printf("Page Fault Rate: %.2f%%\n", ((float)clockFault/page)*100);
-	*/
+	printf("Page Fault Rate: %.2f%%\n\n", ((float)clockFault/page)*100);
+	
 
 	return 0;
 }
