@@ -226,10 +226,10 @@ int Clock_algo(int *referStr, int frame, int page) {
 				/*
 				printf("Page hit   %d: ", currPage);
             			for (int k = 0; k < frame; k++) {
-               			printf("%d ", frameArr[k].pageNum);
+               			printf("%d(%d) ", frameArr[k].pageNum, frameArr[k].useBit);
             			}
-            			printf("\n");
-            			*/
+            			printf("\n");*/
+            			
             			break;
 			}
 		}
@@ -241,7 +241,7 @@ int Clock_algo(int *referStr, int frame, int page) {
 			// empty frame
 			if (tail < frame) {
 				frameArr[tail].pageNum = currPage;
-				frameArr[tail].useBit = 1;
+				frameArr[tail].useBit = 0;
 				tail++;
 			}
 			else { // full frame
@@ -252,7 +252,7 @@ int Clock_algo(int *referStr, int frame, int page) {
 					}
 					else {
 						frameArr[hand].pageNum = currPage;
-						frameArr[hand].useBit = 1;
+						frameArr[hand].useBit = 0;
 						hand = (hand+1) % frame;
 						break;
 					}
@@ -260,7 +260,7 @@ int Clock_algo(int *referStr, int frame, int page) {
 			}/*
 			printf("Page Fault %d: ", currPage);
             		for (int k = 0; k < frame; k++) {
-               		printf("%d ", frameArr[k].pageNum);
+               		printf("%d(%d) ", frameArr[k].pageNum, frameArr[k].useBit);
             		}
             		printf("\n");*/
 		}
