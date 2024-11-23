@@ -7,7 +7,7 @@
 #include <linux/module.h>
 #include <linux/seq_file.h>
 #include <linux/cred.h>
-
+#include <linux/jiffies.h>
 
 struct proc_dir_entry *proc_info_dir;
 struct proc_dir_entry *proc_info_file;
@@ -51,15 +51,21 @@ static int proc_info_print(struct seq_file *sf, void *v)
 	
 	if(targetPid == -1) { //all process
 		for_each_process(task) {
-			seq_printf(sf, "%-6d %-6d %-6d %-6d %-10llu %-10llu %-15s %s\n",
-			task->pid, task->real_parent->pid, __kuid_val(task->cred->uid), __kgid_val(task->cred->gid), task->utime, task->stime, getState(task), task->comm);
+			unsigned long Utime = jiffies_to_msecs(task->utime) / 1000;
+            		unsigned long Stime = jiffies_to_msecs(task->stime) / 1000;
+            		
+			seq_printf(sf, "%-6d %-6d %-6d %-6d %-10lu %-10lu %-15s %s\n",
+			task->pid, task->real_parent->pid, __kuid_val(task->cred->uid), __kgid_val(task->cred->gid), Utime, Stime, getState(task), task->comm);
 		}
 	}
 	else { //target process
 		task = pid_task(find_vpid(targetPid), PIDTYPE_PID); //Find task by pid
 		if (task) {
-			seq_printf(sf, "%-6d %-6d %-6d %-6d %-10llu %-10llu %-15s %s\n",
-			task->pid, task->real_parent->pid, __kuid_val(task->cred->uid), __kgid_val(task->cred->gid), task->utime, task->stime, getState(task), task->comm);
+			unsigned long Utime = jiffies_to_msecs(task->utime) / 1000;
+            		unsigned long Stime = jiffies_to_msecs(task->stime) / 1000;
+            		
+			seq_printf(sf, "%-6d %-6d %-6d %-6d %-10lu %-10lu %-15s %s\n",
+			task->pid, task->real_parent->pid, __kuid_val(task->cred->uid), __kgid_val(task->cred->gid), Utime, Stime, getState(task), task->comm);
 		}
 	}
 	
