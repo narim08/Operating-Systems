@@ -182,6 +182,7 @@ void read_file(const char *name) {
 		currBlock = fatTable[currBlock];
 	}
 	printf("\n");
+	
 	printf("FAT Table: \n");
 	for (int i = 0; i < 10; i++) {
 	    printf("Block %d -> %d\n", i, fatTable[i]);
@@ -211,7 +212,7 @@ void delete_file(const char *name) {
 	
 	while (currBlock != -1) {
 		int nextblock = fatTable[currBlock];
-		fatTable[currBlock] = -1;
+		fatTable[currBlock] = 0;
 		currBlock = nextblock;
 	}
 	strcpy(fileEntry[fileIndex].fileName, "-");
